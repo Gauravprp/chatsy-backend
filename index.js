@@ -7,16 +7,19 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-let messages = []; // ✅ In-memory array
+let roomMessages = {}; // 🧠 In-memory object: { room1: [...], room2: [...] }
 
-// Get all messages
+// Get messages for a room
 app.get('/messages', (req, res) => {
-  res.json(messages);
+  const room = req.query.room || 'default';
+  res.json(roomMessages[room] || []);
 });
 
-// Post a new message
+// Post a new message to a room
 app.post('/messages', (req, res) => {
   const { name, message } = req.body;
+  const room = req.query.room || 'default';
+
   if (!name || !message) {
     return res.status(400).json({ error: 'Missing name or message' });
   }
@@ -28,10 +31,19 @@ app.post('/messages', (req, res) => {
     time: new Date().toISOString()
   };
 
-  messages.push(msg);
+  if (!roomMessages[room]) roomMessages[room] = [];
+  roomMessages[room].push(msg);
   res.status(201).json(msg);
 });
 
+// Clear messages in a room
+app.delete('/messages', (req, res) => {
+  const room = req.query.room || 'default';
+  roomMessages[room] = [];
+  res.json({ status: 'cleared', room });
+});
+
+// Health check route
 app.get('/', (req, res) => {
   res.send('Chat backend is running ✅');
 });
